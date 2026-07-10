@@ -16,24 +16,36 @@ function assertValidSlug(slug: string): void {
     }
 }
 
+function slugify(name: string): string {
+    const slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    return slug || "untitled";
+}
+
 class ProjectService {
     async createProject(inputData: CreateProjectInputData) {
-        assertValidSlug(inputData.slug);
+        const slugBase = slugify(inputData.name);
 
-        const existing = await prisma.project.findFirst({
-            where: { slug: inputData.slug, userId: inputData.userId },
-            select: { id: true },
-        });
-
-        if (existing) {
-            throw new Error("A project with this slug already exists for this user");
+        let slug = slugBase;
+        let attempt = 0;
+        while (
+            await prisma.project.findFirst({
+                where: { slug, userId: inputData.userId },
+                select: { id: true },
+            })
+        ) {
+            attempt += 1;
+            slug = `${slugBase}-${attempt}`;
         }
 
         return prisma.project.create({
             data: {
                 userId: inputData.userId,
                 name: inputData.name,
-                slug: inputData.slug,
+                slug,
                 description: inputData.description,
             },
         });

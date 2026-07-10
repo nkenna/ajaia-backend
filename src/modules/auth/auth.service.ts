@@ -63,7 +63,6 @@ class AuthService {
             .createProject({
                 userId: user.id,
                 name: "default",
-                slug: `default-${user.id}`,
             })
             .catch((error) => {
                 console.error("Failed to create default project:", error);

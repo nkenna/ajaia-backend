@@ -5,7 +5,7 @@ export const createDocumentValidator = [
     body("projectId").isString().notEmpty().withMessage("Project id is required"),
     body("name").isString().trim().notEmpty().withMessage("Name is required"),
     body("content").optional(),
-    body("contentHtml").optional().isString(),
+    body("contentHtml").optional({ nullable: true }).isString(),
 ];
 
 export const renameDocumentValidator = [
@@ -22,7 +22,7 @@ export const renameDocumentValidator = [
 export const updateContentValidator = [
     param("id").isString().notEmpty().withMessage("Document id is required"),
     body("content").exists().withMessage("Content is required"),
-    body("contentHtml").optional().isString(),
+    body("contentHtml").optional({ nullable: true }).isString(),
 ];
 
 export const restoreVersionValidator = [
@@ -35,14 +35,14 @@ export const importAsDocumentValidator = [
     body("content").exists().withMessage("Content is required"),
     body("fileId").isString().notEmpty().withMessage("File id is required"),
     body("projectId").optional().isString(),
-    body("contentHtml").optional().isString(),
+    body("contentHtml").optional({ nullable: true }).isString(),
 ];
 
 export const importIntoDocumentValidator = [
     param("id").isString().notEmpty().withMessage("Document id is required"),
     body("content").exists().withMessage("Content is required"),
     body("fileId").isString().notEmpty().withMessage("File id is required"),
-    body("contentHtml").optional().isString(),
+    body("contentHtml").optional({ nullable: true }).isString(),
 ];
 
 export const attachFileValidator = [

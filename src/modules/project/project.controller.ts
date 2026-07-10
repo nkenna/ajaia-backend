@@ -21,7 +21,6 @@ class ProjectController {
             const project = await projectService.createProject({
                 userId,
                 name: req.body.name as string,
-                slug: req.body.slug as string,
                 description: req.body.description as string | undefined,
             });
 

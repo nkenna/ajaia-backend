@@ -3,11 +3,6 @@ import { Request, Response, NextFunction } from "express";
 
 export const createProjectValidator = [
     body("name").isString().trim().notEmpty().withMessage("Project name is required"),
-    body("slug")
-        .isString()
-        .trim()
-        .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-        .withMessage("Slug must be lowercase alphanumeric and hyphen-separated"),
     body("description").optional().isString().trim(),
 ];
 
