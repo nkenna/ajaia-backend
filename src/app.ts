@@ -61,7 +61,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get('/', (req, res) => {
-    res.status(200).json({ message: "Ongist API is running." });
+    res.status(200).json({ message: "API is running." });
 });
 
 app.get('/health', async (req, res) => {
