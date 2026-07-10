@@ -4,7 +4,6 @@ export interface CreateDocumentInputData {
     userId: string;
     projectId: string;
     name: string;
-    slug: string;
     content?: unknown;
     contentHtml?: string;
 }

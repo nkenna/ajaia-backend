@@ -35,8 +35,6 @@ function slugify(name: string): string {
 
 class DocumentService {
     async createDocument(inputData: CreateDocumentInputData): Promise<Document> {
-        assertValidSlug(inputData.slug);
-
         const project = await prisma.project.findUnique({
             where: { id: inputData.projectId },
             select: { userId: true },
@@ -50,13 +48,17 @@ class DocumentService {
             throw new Error("You do not have permission to create a document in this project");
         }
 
-        const existing = await prisma.document.findFirst({
-            where: { slug: inputData.slug, projectId: inputData.projectId },
-            select: { id: true },
-        });
-
-        if (existing) {
-            throw new Error("A document with this slug already exists in this project");
+        const slugBase = slugify(inputData.name);
+        let slug = slugBase;
+        let attempt = 0;
+        while (
+            await prisma.document.findFirst({
+                where: { slug, projectId: inputData.projectId },
+                select: { id: true },
+            })
+        ) {
+            attempt += 1;
+            slug = `${slugBase}-${attempt}`;
         }
 
         const content = inputData.content ?? { type: "doc", content: [] };
@@ -68,7 +70,7 @@ class DocumentService {
                         userId: inputData.userId,
                         projectId: inputData.projectId,
                         name: inputData.name,
-                        slug: inputData.slug,
+                        slug,
                         content,
                         contentHtml: inputData.contentHtml,
                     },

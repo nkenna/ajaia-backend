@@ -26,7 +26,6 @@ class DocumentController {
                 userId,
                 projectId: req.body.projectId as string,
                 name: req.body.name as string,
-                slug: req.body.slug as string,
                 content: req.body.content,
                 contentHtml: req.body.contentHtml as string | undefined,
             });
