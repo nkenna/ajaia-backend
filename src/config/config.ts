@@ -32,7 +32,7 @@ const config = {
     },
 
     cors: {
-        origin: process.env.CORS_ORIGIN ?? true,
+        origin: 'ajaia-web.vercel.app',
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
