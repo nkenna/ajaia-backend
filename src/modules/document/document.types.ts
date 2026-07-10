@@ -1,4 +1,4 @@
-import { Document, VersionHistory, File, DocumentShare } from "../../lib/prisma";
+import { Document, DocumentShare } from "../../lib/prisma";
 
 export interface CreateDocumentInputData {
     userId: string;
