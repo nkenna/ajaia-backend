@@ -1,0 +1,28 @@
+model Document {
+    id         String @id @default(uuid())
+    slug       String
+    shareToken String @unique @default(uuid())
+
+    name String
+    
+    projectId String
+    project Project @relation(fields: [projectId], references: [id])
+
+    userId String
+    user User @relation(fields: [userId], references: [id])
+
+    versions VersionHistory[]
+    files File[]
+
+    currentVersion Int @default(1)
+
+    content Json
+    contentHtml String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([projectId, slug])
+    @@index([userId])
+    @@index([projectId])
+}

@@ -1,0 +1,23 @@
+model File {
+    id           String @id @default(uuid())
+    name         String
+    mimeType     String
+    size         Int
+
+    storageKey   String
+
+    uploadedById String
+    uploadedBy   User @relation(fields: [uploadedById], references: [id])
+
+    documentId   String?
+    document     Document? @relation(fields: [documentId], references: [id])
+
+    projectId    String?
+    project      Project? @relation(fields: [projectId], references: [id])
+
+    createdAt    DateTime @default(now())
+
+    @@index([uploadedById])
+    @@index([documentId])
+    @@index([projectId])
+}
