@@ -1,14 +1,14 @@
 model VersionHistory {
-    id           String @id @default(uuid())
+  id String @id @default(uuid())
 
-    documentId String
-    document Document @relation(fields: [documentId], references: [id])
-    
-    versionNumber Int
-    content Json
-    contentHtml String?
-    createdAt DateTime @default(now())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id])
 
-    @@unique([documentId, versionNumber])
-    @@index([documentId])
+  versionNumber Int
+  content       Json
+  contentHtml   String?
+  createdAt     DateTime @default(now())
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
 }

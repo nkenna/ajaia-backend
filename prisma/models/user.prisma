@@ -1,16 +1,17 @@
 model User {
-    id           String @id @default(uuid())
-    firstName String
-    lastName String
-    email String @unique
-    passwordHash String
+  id           String @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String @unique
+  passwordHash String
 
-    projects Project[]
-    documents Document[]
-    sessions Session[]
-    refreshTokens RefreshToken[]
-    files File[]
+  projects      Project[]
+  documents     Document[]
+  sharedDocuments DocumentShare[] @relation("SharedDocuments")
+  sessions      Session[]
+  refreshTokens RefreshToken[]
+  files         File[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

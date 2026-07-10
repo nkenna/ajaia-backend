@@ -1,4 +1,4 @@
-import { Document, VersionHistory, File } from "../../lib/prisma";
+import { Document, VersionHistory, File, DocumentShare } from "../../lib/prisma";
 
 export interface CreateDocumentInputData {
     userId: string;
@@ -72,3 +72,39 @@ export interface AttachFileInputData {
     userId: string;
     fileId: string;
 }
+
+export interface ShareDocumentInputData {
+    documentId: string;
+    userId: string;
+    sharedWithEmail: string;
+    permission?: "read" | "edit";
+}
+
+export interface UnshareDocumentInputData {
+    documentId: string;
+    userId: string;
+    shareId: string;
+}
+
+export interface ListDocumentSharesInputData {
+    documentId: string;
+    userId: string;
+}
+
+export interface ListSharedDocumentsInputData {
+    userId: string;
+}
+
+export interface DocumentShareWithUser extends DocumentShare {
+    user: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+}
+
+export type DocumentWithAccess = Document & {
+    accessType: "owner" | "shared";
+    permission?: "read" | "edit";
+};

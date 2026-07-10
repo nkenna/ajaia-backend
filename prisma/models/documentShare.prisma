@@ -1,0 +1,15 @@
+model DocumentShare {
+    id         String    @id @default(uuid())
+    documentId String
+    document   Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+    sharedWithId String
+    sharedWith   User      @relation("SharedDocuments", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+    permission String    @default("read") // "read" | "edit"
+    createdAt  DateTime  @default(now())
+
+    @@unique([documentId, sharedWithId])
+    @@index([sharedWithId])
+    @@index([documentId])
+}

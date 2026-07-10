@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import documentService from "./document.service";
+import {
+    ShareDocumentInputData,
+    UnshareDocumentInputData,
+    ListDocumentSharesInputData,
+    ListSharedDocumentsInputData,
+} from "./document.types";
 
 interface AuthenticatedRequest extends Request {
     user?: { id: string };
@@ -57,7 +63,7 @@ class DocumentController {
                 return;
             }
 
-            const document = await documentService.getOwnedDocument({
+            const document = await documentService.getDocument({
                 userId,
                 documentId: req.params.id as string,
             });
@@ -247,6 +253,84 @@ class DocumentController {
             });
 
             res.status(200).json(file);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async share(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const userId = getUserId(req);
+            if (!userId) {
+                unauthorized(res);
+                return;
+            }
+
+            const share = await documentService.shareDocument({
+                documentId: req.params.id as string,
+                userId,
+                sharedWithEmail: req.body.email as string,
+                permission: req.body.permission as ShareDocumentInputData["permission"],
+            });
+
+            res.status(201).json(share);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async unshare(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const userId = getUserId(req);
+            if (!userId) {
+                unauthorized(res);
+                return;
+            }
+
+            await documentService.unshareDocument({
+                documentId: req.params.id as string,
+                userId,
+                shareId: req.params.shareId as string,
+            });
+
+            res.status(204).send();
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async listShares(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const userId = getUserId(req);
+            if (!userId) {
+                unauthorized(res);
+                return;
+            }
+
+            const shares = await documentService.listDocumentShares({
+                documentId: req.params.id as string,
+                userId,
+            });
+
+            res.status(200).json(shares);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async listSharedWithMe(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const userId = getUserId(req);
+            if (!userId) {
+                unauthorized(res);
+                return;
+            }
+
+            const documents = await documentService.listSharedDocuments({
+                userId,
+            });
+
+            res.status(200).json(documents);
         } catch (error) {
             next(error);
         }

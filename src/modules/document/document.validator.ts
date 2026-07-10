@@ -4,11 +4,6 @@ import { Request, Response, NextFunction } from "express";
 export const createDocumentValidator = [
     body("projectId").isString().notEmpty().withMessage("Project id is required"),
     body("name").isString().trim().notEmpty().withMessage("Name is required"),
-    body("slug")
-        .isString()
-        .trim()
-        .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-        .withMessage("Slug must be lowercase alphanumeric and hyphen-separated"),
     body("content").optional(),
     body("contentHtml").optional().isString(),
 ];
@@ -17,6 +12,7 @@ export const renameDocumentValidator = [
     param("id").isString().notEmpty().withMessage("Document id is required"),
     body("name").isString().trim().notEmpty().withMessage("Name is required"),
     body("slug")
+        .optional()
         .isString()
         .trim()
         .matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -64,6 +60,21 @@ export const documentIdParamValidator = [
 
 export const shareTokenParamValidator = [
     param("shareToken").isString().notEmpty().withMessage("Share token is required"),
+];
+
+export const shareDocumentValidator = [
+    param("id").isString().notEmpty().withMessage("Document id is required"),
+    body("email").isString().trim().isEmail().withMessage("A valid email is required"),
+    body("permission").optional().isIn(["read", "edit"]).withMessage("Permission must be read or edit"),
+];
+
+export const unshareDocumentValidator = [
+    param("id").isString().notEmpty().withMessage("Document id is required"),
+    param("shareId").isString().notEmpty().withMessage("Share id is required"),
+];
+
+export const listSharesValidator = [
+    param("id").isString().notEmpty().withMessage("Document id is required"),
 ];
 
 export function handleValidationErrors(

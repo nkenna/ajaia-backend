@@ -1,18 +1,18 @@
 model RefreshToken {
-    id        String @id @default(uuid())
-    token     String @unique
+  id    String @id @default(uuid())
+  token String @unique
 
-    userId    String
-    user      User @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-    sessionId String
-    session   Session @relation(fields: [sessionId], references: [id])
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
 
-    expiresAt DateTime
-    revoked   Boolean @default(false)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([userId])
-    @@index([sessionId])
+  @@index([userId])
+  @@index([sessionId])
 }

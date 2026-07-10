@@ -1,5 +1,10 @@
 import { prisma, Prisma } from "../../lib/prisma";
-import { Document, VersionHistory, File } from "../../generated/prisma";
+import {
+    Document,
+    VersionHistory,
+    File,
+    DocumentShare,
+} from "../../generated/prisma";
 import {
     CreateDocumentInputData,
     GetDocumentInputData,
@@ -12,6 +17,12 @@ import {
     ImportFileAsDocumentInputData,
     ImportFileIntoDocumentInputData,
     AttachFileInputData,
+    ShareDocumentInputData,
+    UnshareDocumentInputData,
+    ListDocumentSharesInputData,
+    ListSharedDocumentsInputData,
+    DocumentShareWithUser,
+    DocumentWithAccess,
 } from "./document.types";
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -34,6 +45,51 @@ function slugify(name: string): string {
 }
 
 class DocumentService {
+    private async hasDocumentAccess(
+        documentId: string,
+        userId: string
+    ): Promise<boolean> {
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            select: { userId: true },
+        });
+
+        if (!document) return false;
+        if (document.userId === userId) return true;
+
+        const share = await prisma.documentShare.findFirst({
+            where: {
+                documentId,
+                sharedWithId: userId,
+            },
+        });
+
+        return !!share;
+    }
+
+    private async hasEditPermission(
+        documentId: string,
+        userId: string
+    ): Promise<boolean> {
+        const document = await prisma.document.findUnique({
+            where: { id: documentId },
+            select: { userId: true },
+        });
+
+        if (!document) return false;
+        if (document.userId === userId) return true;
+
+        const share = await prisma.documentShare.findFirst({
+            where: {
+                documentId,
+                sharedWithId: userId,
+                permission: "edit",
+            },
+        });
+
+        return !!share;
+    }
+
     async createDocument(inputData: CreateDocumentInputData): Promise<Document> {
         const project = await prisma.project.findUnique({
             where: { id: inputData.projectId },
@@ -110,7 +166,7 @@ class DocumentService {
         return document;
     }
 
-    async getOwnedDocument(inputData: GetDocumentInputData): Promise<Document> {
+    async getDocument(inputData: GetDocumentInputData): Promise<DocumentWithAccess> {
         const where = inputData.documentId
             ? { id: inputData.documentId }
             : inputData.slug
@@ -132,11 +188,29 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (document.userId !== inputData.userId) {
+        if (document.userId === inputData.userId) {
+            return { ...document, accessType: "owner" } as DocumentWithAccess;
+        }
+
+        const share = await prisma.documentShare.findFirst({
+            where: {
+                documentId: document.id,
+                sharedWithId: inputData.userId,
+            },
+            select: {
+                permission: true,
+            },
+        });
+
+        if (!share) {
             throw new Error("You do not have permission to access this document");
         }
 
-        return document;
+        return {
+            ...document,
+            accessType: "shared",
+            permission: share.permission,
+        } as DocumentWithAccess;
     }
 
     async renameDocument(inputData: RenameDocumentInputData): Promise<Document> {
@@ -149,7 +223,7 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (existing.userId !== inputData.userId) {
+        if (!(existing.userId === inputData.userId || await this.hasEditPermission(inputData.id, inputData.userId))) {
             throw new Error("You do not have permission to rename this document");
         }
 
@@ -189,7 +263,7 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (existing.userId !== inputData.userId) {
+        if (!(existing.userId === inputData.userId || await this.hasEditPermission(inputData.id, inputData.userId))) {
             throw new Error("You do not have permission to edit this document");
         }
 
@@ -220,16 +294,7 @@ class DocumentService {
     }
 
     async listVersions(inputData: ListVersionsInputData): Promise<VersionHistory[]> {
-        const document = await prisma.document.findUnique({
-            where: { id: inputData.documentId },
-            select: { userId: true },
-        });
-
-        if (!document) {
-            throw new Error("Document not found");
-        }
-
-        if (document.userId !== inputData.userId) {
+        if (!(await this.hasDocumentAccess(inputData.documentId, inputData.userId))) {
             throw new Error("You do not have permission to view this document's versions");
         }
 
@@ -249,7 +314,7 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (document.userId !== inputData.userId) {
+        if (!(document.userId === inputData.userId || await this.hasEditPermission(inputData.documentId, inputData.userId))) {
             throw new Error("You do not have permission to restore this document");
         }
 
@@ -302,7 +367,7 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (existing.userId !== inputData.userId) {
+        if (!(existing.userId === inputData.userId || await this.hasEditPermission(inputData.id, inputData.userId))) {
             throw new Error("You do not have permission to delete this document");
         }
 
@@ -410,7 +475,7 @@ class DocumentService {
             throw new Error("Document not found");
         }
 
-        if (document.userId !== inputData.userId) {
+        if (!(document.userId === inputData.userId || await this.hasEditPermission(inputData.documentId, inputData.userId))) {
             throw new Error("You do not have permission to edit this document");
         }
 
@@ -449,16 +514,7 @@ class DocumentService {
     }
 
     async attachFile(inputData: AttachFileInputData): Promise<File> {
-        const document = await prisma.document.findUnique({
-            where: { id: inputData.documentId },
-            select: { userId: true },
-        });
-
-        if (!document) {
-            throw new Error("Document not found");
-        }
-
-        if (document.userId !== inputData.userId) {
+        if (!(await this.hasEditPermission(inputData.documentId, inputData.userId))) {
             throw new Error("You do not have permission to attach files to this document");
         }
 
@@ -479,6 +535,137 @@ class DocumentService {
             where: { id: inputData.fileId },
             data: { documentId: inputData.documentId },
         });
+    }
+
+    async shareDocument(inputData: ShareDocumentInputData): Promise<DocumentShare> {
+        const document = await prisma.document.findUnique({
+            where: { id: inputData.documentId },
+            select: { userId: true },
+        });
+
+        if (!document) {
+            throw new Error("Document not found");
+        }
+
+        if (document.userId !== inputData.userId) {
+            throw new Error("Only the document owner can share this document");
+        }
+
+        const targetUser = await prisma.user.findUnique({
+            where: { email: inputData.sharedWithEmail },
+            select: { id: true },
+        });
+
+        if (!targetUser) {
+            throw new Error("User not found");
+        }
+
+        if (targetUser.id === inputData.userId) {
+            throw new Error("You cannot share a document with yourself");
+        }
+
+        const existingShare = await prisma.documentShare.findUnique({
+            where: {
+                documentId_sharedWithId: {
+                    documentId: inputData.documentId,
+                    sharedWithId: targetUser.id,
+                },
+            },
+        });
+
+        if (existingShare) {
+            throw new Error("This document is already shared with that user");
+        }
+
+        return prisma.documentShare.create({
+            data: {
+                documentId: inputData.documentId,
+                sharedWithId: targetUser.id,
+                permission: inputData.permission ?? "read",
+            },
+        });
+    }
+
+    async unshareDocument(inputData: UnshareDocumentInputData): Promise<void> {
+        const document = await prisma.document.findUnique({
+            where: { id: inputData.documentId },
+            select: { userId: true },
+        });
+
+        if (!document) {
+            throw new Error("Document not found");
+        }
+
+        if (document.userId !== inputData.userId) {
+            throw new Error("Only the document owner can manage sharing");
+        }
+
+        const share = await prisma.documentShare.findUnique({
+            where: { id: inputData.shareId },
+            select: { documentId: true },
+        });
+
+        if (!share || share.documentId !== inputData.documentId) {
+            throw new Error("Share not found");
+        }
+
+        await prisma.documentShare.delete({
+            where: { id: inputData.shareId },
+        });
+    }
+
+    async listDocumentShares(inputData: ListDocumentSharesInputData): Promise<DocumentShareWithUser[]> {
+        const document = await prisma.document.findUnique({
+            where: { id: inputData.documentId },
+            select: { userId: true },
+        });
+
+        if (!document) {
+            throw new Error("Document not found");
+        }
+
+        if (document.userId !== inputData.userId) {
+            throw new Error("Only the document owner can view shares");
+        }
+
+        const shares = await prisma.documentShare.findMany({
+            where: { documentId: inputData.documentId },
+            include: {
+                sharedWith: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        return shares.map((share) => ({
+            ...share,
+            user: share.sharedWith,
+        })) as DocumentShareWithUser[];
+    }
+
+    async listSharedDocuments(inputData: ListSharedDocumentsInputData): Promise<DocumentWithAccess[]> {
+        const shares = await prisma.documentShare.findMany({
+            where: { sharedWithId: inputData.userId },
+            include: {
+                document: {
+                    include: {
+                        versions: { orderBy: { versionNumber: "desc" } },
+                    },
+                },
+            },
+        });
+
+        return shares.map((share) => ({
+            ...share.document,
+            accessType: "shared",
+            permission: share.permission,
+        })) as DocumentWithAccess[];
     }
 }
 

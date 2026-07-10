@@ -12,6 +12,9 @@ import {
     listDocumentsValidator,
     documentIdParamValidator,
     shareTokenParamValidator,
+    shareDocumentValidator,
+    unshareDocumentValidator,
+    listSharesValidator,
     handleValidationErrors,
 } from "./document.validator";
 import { upload, handleUploadedFile } from "./document.upload";
@@ -39,6 +42,12 @@ documentRouter.get(
     listDocumentsValidator,
     handleValidationErrors,
     documentController.list
+);
+
+documentRouter.get(
+    "/shared-with-me",
+    authenticate,
+    documentController.listSharedWithMe
 );
 
 documentRouter.get(
@@ -87,6 +96,30 @@ documentRouter.delete(
     documentIdParamValidator,
     handleValidationErrors,
     documentController.delete
+);
+
+documentRouter.post(
+    "/:id/share",
+    authenticate,
+    shareDocumentValidator,
+    handleValidationErrors,
+    documentController.share
+);
+
+documentRouter.delete(
+    "/:id/share/:shareId",
+    authenticate,
+    unshareDocumentValidator,
+    handleValidationErrors,
+    documentController.unshare
+);
+
+documentRouter.get(
+    "/:id/shares",
+    authenticate,
+    listSharesValidator,
+    handleValidationErrors,
+    documentController.listShares
 );
 
 documentRouter.post(
