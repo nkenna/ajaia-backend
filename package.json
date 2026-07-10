@@ -5,7 +5,7 @@
   "main": "dist/src/server.js",
   "scripts": {
     "postinstall": "prisma generate",
-    "build": "npm install && npx prisma generate && tsc && npx copyfiles -u 1 \"src/**/*.json\" dist && npx copyfiles -u 1 \"src/generated/**/*\" dist && npx copyfiles -u 1 \"src/public/**/*\" dist",
+    "build": "npm install && npx prisma generate && tsc && npx copyfiles \"src/**/*.json\" dist && npx copyfiles \"src/generated/**/*\" dist && npx copyfiles \"src/public/**/*\" dist",
     "start": "node dist/src/server.js",
     "dev": "nodemon --watch src --ext ts --exec tsx src/server.ts",
     "typecheck": "tsc --noEmit",
